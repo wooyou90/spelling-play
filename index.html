@@ -993,6 +993,7 @@ function confetti(){
 }
 
 /* ---------------- Word selection ---------------- */
+const RAND_RATIO = 0.4; // '내 단어 + 가끔 랜덤'에서 랜덤 단어 비율
 function generateRandom(n, level, hardPct, excludeWords, retried){
   if (n <= 0) return [];
   const seen = new Set(S.seen), ex = new Set(excludeWords.map(norm));
@@ -1024,10 +1025,14 @@ function getItems(){
   const mode = sourceMode(), words = activeWords();
   if (mode === 'random') return generateRandom(S.opt.count, currentLevel(), S.opt.hard, words);
   if (mode === 'list') return listItems(S.opt.listCount);
-  const total = S.opt.listCount === 'all' ? words.length + Math.max(1, Math.round(words.length * 0.25)) : Number(S.opt.listCount);
-  let randN = Math.max(1, Math.round(total * 0.25));
-  let userN = Math.min(words.length, total - randN);
-  if (userN < total - randN) randN = total - userN;
+  let userN, randN;
+  if (S.opt.listCount === 'all') { userN = words.length; randN = Math.max(1, Math.round(words.length * RAND_RATIO)); }
+  else {
+    const total = Number(S.opt.listCount);
+    randN = Math.max(1, Math.round(total * RAND_RATIO));
+    userN = Math.min(words.length, total - randN);
+    if (userN < total - randN) randN = total - userN;
+  }
   return shuffle(listItems(userN).concat(generateRandom(randN, currentLevel(), S.opt.hard, words)));
 }
 function sourceLabel(){ const m = sourceMode(); return m === 'random' ? '랜덤 ' + LEVEL_NAMES[currentLevel()] : m === 'mix' ? activeList().name + ' + 랜덤' : activeList().name; }
@@ -1136,7 +1141,7 @@ function renderWords(){
 function renderWordPick(){
   const words = activeWords(), mode = sourceMode();
   for (const b of $('segSource').children) { b.setAttribute('aria-pressed', b.dataset.v === mode); b.disabled = !words.length && b.dataset.v !== 'random'; }
-  $('sourceNote').textContent = !words.length ? '아직 내 단어가 없어서 랜덤 단어로 놀아요. 위에 단어를 저장하면 바뀌어요.' : mode === 'mix' ? `내 단어 위주로 나오고, 4개 중 1개쯤 ${LEVEL_NAMES[currentLevel()]} 수준의 랜덤 단어가 섞여요.` : mode === 'list' ? '저장한 내 단어만 나와요. 틀렸던 단어가 먼저 나와요.' : '내장 단어 뱅크에서 수준에 맞는 랜덤 단어만 나와요.';
+  $('sourceNote').textContent = !words.length ? '아직 내 단어가 없어서 랜덤 단어로 놀아요. 위에 단어를 저장하면 바뀌어요.' : mode === 'mix' ? `내 단어 위주로 나오고, 5개 중 2개쯤 ${LEVEL_NAMES[currentLevel()]} 수준의 랜덤 단어가 섞여요.` : mode === 'list' ? '저장한 내 단어만 나와요. 틀렸던 단어가 먼저 나와요.' : '내장 단어 뱅크에서 수준에 맞는 랜덤 단어만 나와요.';
   $('listInfo').hidden = mode === 'random'; $('randomBox').hidden = mode === 'list'; $('countRow').hidden = mode !== 'random';
   for (const b of $('segListCount').children) b.setAttribute('aria-pressed', String(b.dataset.v) === String(S.opt.listCount));
   if (mode !== 'list') {
